@@ -8,12 +8,14 @@ public class Global
     public static Unit selectedUnit;
     public static Node selectedNode;
     public static bool attacking = false;
+    public static bool attackMenuActive = false;
     public static bool menuAction = false;
     public static bool menuBasic = false;
     public static Node[] attackTargets;
     public static bool AllyTurn = true;
     public static int currentTurn = 1;
     public static Unit[] allUnits; //updated each turn to account for reinforcements
+    public static List<Node> lastPath;
 
     public static void resetGlobals()
     {

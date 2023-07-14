@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Tilemaps;
 
 public class Node : MonoBehaviour
 {
@@ -19,6 +20,7 @@ public class Node : MonoBehaviour
 
     public Unit unit;
     public int terrainPenalty = 1;
+    public Map map; 
 
     private SpriteRenderer rend;
     private Color startColor;
@@ -41,6 +43,16 @@ public class Node : MonoBehaviour
     void Update()
     {
         isOccupied = unit != null;
+        if (Input.GetMouseButton(1))
+        {
+            if (Global.attacking)
+            {
+                Debug.Log(Global.selectedNode == null);
+                Global.selectedUnit.OpenMenu();
+                Global.selectedNode.resetDefenders();
+                Global.attacking = false;
+            }
+        }
     }
 
     private void OnMouseEnter()
@@ -60,6 +72,7 @@ public class Node : MonoBehaviour
         }
     }
 
+    //Splits into various contextual actions
     private void OnMouseDown()
     {
         if (Global.currentTurn % 2 == 0)
@@ -71,7 +84,6 @@ public class Node : MonoBehaviour
             if (unit != null)
             {
                 MouseDownChooseTarget();
-                Global.attacking = false;
             }
             return;
         }
@@ -81,7 +93,7 @@ public class Node : MonoBehaviour
             Global.selectedNode = this;
         }
 
-        else if(Global.selectedUnit != null /*and unit is on active player team*/)
+        else if(Global.selectedUnit != null)
         {
             MouseDownAllySelected();
         }
@@ -141,8 +153,11 @@ public class Node : MonoBehaviour
             Global.selectedNode.unit = null;
             Global.selectedNode.resetColor();
             List<Node> path = AStar(Global.selectedNode, this);
+            Global.lastPath = new List<Node>(path);
+            Global.lastPath.Reverse();
             Global.selectedNode = this;
             Global.selectedUnit.path = path;
+            unit = Global.selectedUnit;
             return;
         }
     }
@@ -151,7 +166,9 @@ public class Node : MonoBehaviour
     {
         //chooses an enemy target from occupied squares within unit attack range.
         Unit attacker = Global.selectedUnit;
-        Unit defender = this.unit;
+        Unit defender = unit;
+        if(!inRange(attacker, this, unit.attackRange)) { Debug.Log("Not in range");  return; }
+        if(defender == null) { Debug.Log("null defender"); return; }
         Debug.Log("attacking " + this.name);
         Global.selectedNode.resetDefenders();
         attacker.Attack(defender);
@@ -194,6 +211,18 @@ public class Node : MonoBehaviour
         east.resetColor();
         west.resetColor();
     }
+
+    private bool inRange(Unit unit, Node node, int range)
+    {
+        if (range < 1) { return false; }
+        if (unit == node.north.unit || unit == node.south.unit || unit == node.east.unit || unit == node.west.unit) { return true; }
+        else
+        {
+            int newRange = range - 1;
+            return inRange(unit, node.north, newRange) || inRange(unit, node.south, newRange) || inRange(unit, node.east, newRange) || inRange(unit, node.west, newRange);
+        }
+    }
+
     /*Checks and assigns adjacent nodes and creates node map. Won't have to account for changes along y axis if adding hills
      * and ledges because both can be handled in movement penalty*/
     public void CheckAdjacent(Node node)
@@ -217,6 +246,14 @@ public class Node : MonoBehaviour
         }
     }
 
+    private float Distance(Node start, Node goal)
+    {
+        Vector2 origin = new Vector2(start.transform.position.x, start.transform.position.y);
+        Vector2 destination = new Vector2(goal.transform.position.x, goal.transform.position.y);
+        return (destination - origin).magnitude;
+    }
+
+    //PATHFINDING
     //Recursively finds all possible moves for a unit to make from starting node.
     private void FindMoves(Node node, List<Node> moves, int movement)
     {
@@ -320,12 +357,5 @@ public class Node : MonoBehaviour
             path.Insert(0, current);
         }
         return path;
-    }
-
-    private float Distance(Node start, Node goal)
-    {
-        Vector2 origin = new Vector2(start.transform.position.x, start.transform.position.y);
-        Vector2 destination = new Vector2(goal.transform.position.x, goal.transform.position.y);
-        return (destination - origin).magnitude;
     }
 }
