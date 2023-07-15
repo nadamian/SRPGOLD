@@ -17,6 +17,8 @@ public class Global
     public static Unit[] allUnits; //updated each turn to account for reinforcements
     public static List<Node> lastPath;
 
+    public static ButtonManager savedManager;
+
     public static void resetGlobals()
     {
         selectedUnit = null;

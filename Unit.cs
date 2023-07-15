@@ -17,13 +17,15 @@ public class Unit : MonoBehaviour
     public Node location;
     private bool isAlive = true;
     private float distanceApprox = .005f;
-    private Node lastLocation;
 
     [Header("Stats")]
     public int HP = 10;
     public int Movement = 6;
     public int attackPower = 5;
     public int attackRange = 1;
+
+    public bool undo = false;
+    public Node lastLocation;
 
 
     // Update is called once per frame
@@ -41,17 +43,26 @@ public class Unit : MonoBehaviour
             if (FastApproximately(transform.position.x, path[1].transform.position.x, distanceApprox) && FastApproximately(transform.position.y, path[1].transform.position.y, distanceApprox))
             {
                 path.RemoveAt(1);
-                if (path.Count == 1)
+                if (path.Count == 1 && !undo)
                 {
                     OpenMenu();
                     hasMoved = true;
-                    //TODO Action menu. Either attack, use item, do other action or wait.
                     lastLocation = location;
                     location = path[0];
                     path = null;
                     moves = null;
                     path = new List<Node>();
                     moves = new List<Node>();
+                }
+                if (undo)
+                {
+                    hasMoved = false;
+                    location = path[0];
+                    path = null;
+                    moves = null;
+                    path = new List<Node>();
+                    moves = new List<Node>();
+                    location.SelectUnitToMove();
                 }
             }
         }
@@ -60,8 +71,8 @@ public class Unit : MonoBehaviour
     public void OpenMenu()
     {
         GameObject menu = Instantiate(playMenuPrefab, this.transform.position, Quaternion.identity);
-        ButtonManager.playMenu = menu;
-        Global.attackMenuActive = true;
+        location.map.buttonManager.playMenu = menu;
+        location.map.attackMenuActive = true;
     }
 
     public void Attack(Unit defender)
@@ -75,7 +86,7 @@ public class Unit : MonoBehaviour
         {
             TakeDamage(damageTaken);
         }
-        Global.resetGlobals();
+        location.map.resetGlobals();
     }
     
     public void TakeDamage(int damage)

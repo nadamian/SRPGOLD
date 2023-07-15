@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -43,14 +44,22 @@ public class Node : MonoBehaviour
     void Update()
     {
         isOccupied = unit != null;
+    }
+
+    private void OnMouseOver()
+    {
         if (Input.GetMouseButton(1))
         {
-            if (Global.attacking)
+            if (map.attacking)
             {
-                Debug.Log(Global.selectedNode == null);
-                Global.selectedUnit.OpenMenu();
-                Global.selectedNode.resetDefenders();
-                Global.attacking = false;
+                map.GetSelectedUnit().OpenMenu();
+                map.GetSelectedNode().resetDefenders();
+                map.attacking = false;
+                map.attackMenuActive = true;
+            }
+            if (map.attackMenuActive)
+            {
+                map.ReversePath();
             }
         }
     }
@@ -58,7 +67,7 @@ public class Node : MonoBehaviour
     private void OnMouseEnter()
     {
         Debug.Log("Mouse enter");
-        if(Global.selectedUnit == null)
+        if(map.GetSelectedUnit() == null)
         {
             upOpacity();
         }
@@ -66,7 +75,7 @@ public class Node : MonoBehaviour
 
     private void OnMouseExit()
     {
-        if(Global.selectedUnit == null)
+        if(map.GetSelectedUnit() == null)
         {
             resetColor();
         }
@@ -75,11 +84,11 @@ public class Node : MonoBehaviour
     //Splits into various contextual actions
     private void OnMouseDown()
     {
-        if (Global.currentTurn % 2 == 0)
+        if (map.currentTurn % 2 == 0)
         {
             return;
         }
-        if (Global.attacking)
+        if (map.attacking)
         {
             if (unit != null)
             {
@@ -87,13 +96,13 @@ public class Node : MonoBehaviour
             }
             return;
         }
-        if (Global.selectedUnit == null)
+        if (map.GetSelectedUnit() == null)
         {
             MouseDownNoUnitSelected();
-            Global.selectedNode = this;
+            map.SetSelectedNode(this);
         }
 
-        else if(Global.selectedUnit != null)
+        else if(map.GetSelectedUnit() != null)
         {
             MouseDownAllySelected();
         }
@@ -111,7 +120,7 @@ public class Node : MonoBehaviour
         if (!isOccupied || unit.hasMoved)
         {
             Debug.Log("No Unit");
-            Global.menuBasic = true; 
+            map.menuBasic = true; 
             return;
         }
         if (unit.allegiance != 0 || unit.hasMoved)
@@ -120,44 +129,49 @@ public class Node : MonoBehaviour
         }
         else
         {
-            Global.selectedUnit = unit;
-            Debug.Log("Unit selected");
-            FindMoves(this, unit.moves, unit.Movement);
-            Debug.Log(unit.moves.Count.ToString());
-            foreach (Node move in unit.moves)
-            {
-                move.upOpacity();
-            }
+            SelectUnitToMove();
+        }
+    }
+
+    public void SelectUnitToMove()
+    {
+        map.SetSelectedUnit(unit);
+        Debug.Log("Unit selected");
+        FindMoves(this, unit.moves, unit.Movement);
+        Debug.Log(unit.moves.Count.ToString());
+        foreach (Node move in unit.moves)
+        {
+            move.upOpacity();
         }
     }
 
     private void MouseDownAllySelected()
     {
         Debug.Log("Unit already selected");
-        if (unit == null && !Global.selectedUnit.moves.Contains(this))
+        if (unit == null && !map.GetSelectedUnit().moves.Contains(this))
         {
             Debug.Log("Not in range");
             return;
         }
-        if (unit == Global.selectedUnit)
+        if (unit == map.GetSelectedUnit())
         {
-            Global.selectedNode.resetColor();
+            map.GetSelectedNode().resetColor();
             foreach (Node move in unit.moves)
             {
                 move.resetColor();
             }
-            Global.selectedUnit = null;
+            map.SetSelectedUnit(null);
         }
-        if (unit == null && Global.selectedUnit.moves.Contains(this))
+        if (unit == null && map.GetSelectedUnit().moves.Contains(this))
         {
-            Global.selectedNode.unit = null;
-            Global.selectedNode.resetColor();
-            List<Node> path = AStar(Global.selectedNode, this);
-            Global.lastPath = new List<Node>(path);
-            Global.lastPath.Reverse();
-            Global.selectedNode = this;
-            Global.selectedUnit.path = path;
-            unit = Global.selectedUnit;
+            map.GetSelectedNode().unit = null;
+            map.GetSelectedNode().resetColor();
+            List<Node> path = AStar(map.GetSelectedNode(), this);
+            map.lastPath = new List<Node>(path);
+            map.lastPath.Reverse();
+            map.SetSelectedNode(this);
+            map.GetSelectedUnit().path = path;
+            unit = map.GetSelectedUnit();
             return;
         }
     }
@@ -165,12 +179,12 @@ public class Node : MonoBehaviour
     private void MouseDownChooseTarget()
     {
         //chooses an enemy target from occupied squares within unit attack range.
-        Unit attacker = Global.selectedUnit;
+        Unit attacker = map.GetSelectedUnit();
         Unit defender = unit;
         if(!inRange(attacker, this, unit.attackRange)) { Debug.Log("Not in range");  return; }
         if(defender == null) { Debug.Log("null defender"); return; }
         Debug.Log("attacking " + this.name);
-        Global.selectedNode.resetDefenders();
+        map.GetSelectedNode().resetDefenders();
         attacker.Attack(defender);
     }
     private void MouseDownEnemySelected()
@@ -186,7 +200,7 @@ public class Node : MonoBehaviour
 
     public void attackColorChange()
     {
-        Debug.Log(Global.selectedUnit == null);
+        Debug.Log(map.GetSelectedUnit() == null);
         rend.color = attackColor;
         upOpacity();
     }
@@ -324,7 +338,7 @@ public class Node : MonoBehaviour
             List<Node> neighbors = new List<Node> { current.north, current.south, current.east, current.west };
             foreach (Node neighbor in neighbors)
             {
-                if (neighbor != null && (neighbor.unit == null || neighbor.unit.allegiance == Global.selectedUnit.allegiance))
+                if (neighbor != null && (neighbor.unit == null || neighbor.unit.allegiance == map.GetSelectedUnit().allegiance))
                 {
                     float tentative_gScore = gScore[current] + current.terrainPenalty;
                     if (!gScore.ContainsKey(neighbor))

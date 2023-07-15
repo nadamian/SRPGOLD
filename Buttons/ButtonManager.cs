@@ -4,28 +4,28 @@ using UnityEngine;
 
 public class ButtonManager : MonoBehaviour
 {
-    public static GameObject playMenu;
-    public static GameObject gameMenu;
+    public GameObject playMenu;
+    public GameObject gameMenu;
+    public Map map;
     public void OnAttackPressed()
     {
-        Debug.Log("Attack Pressed");
-        Global.attacking = true;
-        Global.selectedNode.highlightDefenders();
-        Destroy(playMenu);
+        map.attacking = true;
+        map.GetSelectedNode().highlightDefenders();
+        DestroyImmediate(playMenu, true);
         playMenu = null;
-        Global.attackMenuActive = false;
+        map.attackMenuActive = false;
     }
     public void OnWaitPressed()
     {
         Debug.Log("Wait Pressed");
-        Global.selectedUnit = null;
-        Destroy(playMenu);
-        Global.attackMenuActive = false;
+        map.SetSelectedUnit(null);
+        DestroyImmediate(playMenu);
+        map.attackMenuActive = false;
     }
 
     public void OnEndTurnPressed()
     {
         Unit[] units = FindObjectsOfType<Unit>();
-        Global.EndTurn(units);
+        map.EndTurn(units);
     }
 }
