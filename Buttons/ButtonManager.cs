@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -25,7 +26,14 @@ public class ButtonManager : MonoBehaviour
 
     public void OnEndTurnPressed()
     {
-        Unit[] units = FindObjectsOfType<Unit>();
-        map.EndTurn(units);
+        Debug.Log("End Turn Pressed");
+        map.gameMenuActive = false;
+        DestroyGameMenu();
+        map.EndTurn();
+    }
+
+    public void DestroyGameMenu()
+    {
+        Destroy(gameMenu);
     }
 }

@@ -4,10 +4,19 @@ using UnityEngine;
 
 public class EnemyController : MonoBehaviour
 {
-
-    public static void EnemyTurn()
+    public Map map;
+    public void EnemyTurn(int turn)
     {
+        int allegiance = turn % map.factions;
         Unit[] units = FindObjectsOfType<Unit>();
-        Global.EndTurn(units);
+        List<Unit> thisTurnUnits = new List<Unit>();
+        foreach (Unit unit in units)
+        {
+            if (unit.allegiance == allegiance)
+            {
+                thisTurnUnits.Add(unit);
+            }
+        }
+        map.EndTurn();
     }
 }

@@ -13,20 +13,28 @@ public class Map : MonoBehaviour
     public List<Node> lastPath;
 
     public ButtonManager buttonManager;
+
     public Color alliedMoveColor;
+
     public bool attacking = false;
     public bool attackMenuActive = false;
+    public bool gameMenuActive = false;
+
     public bool menuAction = false;
-    public bool menuBasic = false;
     public Node[] attackTargets;
     public bool AllyTurn = true;
     public int currentTurn = 1;
     public Unit[] allUnits; //updated each turn to account for reinforcements
+    public int factions = 2; //Determines number of distinct factions that will be taking turns 
 
     private Unit selectedUnit;
     private Node selectedNode;
     private Unit lastUnit;
     private Node lastNode;
+    private Unit[] units;
+    private Node[] nodes;
+
+    private int displayTurn = 1;
 
     void Awake()
     {
@@ -46,8 +54,8 @@ public class Map : MonoBehaviour
                 }
             }
         }
-        Unit[] units = FindObjectsOfType<Unit>();
-        Node[] nodes = FindObjectsOfType<Node>();
+        units = FindObjectsOfType<Unit>();
+        nodes = FindObjectsOfType<Node>();
         foreach (Node node in nodes)
         {
             node.map = this; 
@@ -55,7 +63,6 @@ public class Map : MonoBehaviour
             {
                 node.CheckAdjacent(secondNode);
             }
-
             foreach (Unit unit in units)
             {
                 if (Vector2.Distance(unit.transform.position, node.transform.position) < 0.5f)
@@ -74,29 +81,28 @@ public class Map : MonoBehaviour
         selectedNode = null;
         attacking = false;
         menuAction = false;
-        menuBasic = false;
+        gameMenuActive = false;
     }
 
-    public void EndTurn(Unit[] units)
+    public void EndTurn()
     {
-        allUnits = units;
+        units = FindObjectsOfType<Unit>();
         foreach (Unit unit in units)
         {
             unit.hasMoved = false;
         }
-        bool allyTurn = !Global.AllyTurn;
-        if (allyTurn)
-        {
-            Global.currentTurn++;
-        }
-        Debug.Log("It is currently turn " + currentTurn);
-        Global.AllyTurn = allyTurn;
+        bool allyTurn = !AllyTurn;
+        currentTurn++;
+        displayTurn = (int)Mathf.Floor(currentTurn / factions);
+        Debug.Log("It is currently turn " + displayTurn.ToString());
+        AllyTurn = allyTurn;
     }
 
     public void ReversePath()
     {
         Debug.Log("Reverse");
         Debug.Log(selectedUnit != null);
+        Destroy(buttonManager.playMenu);
         selectedNode = selectedUnit.lastLocation;
         selectedUnit.path = lastPath;
         selectedUnit.undo = true;
@@ -122,5 +128,43 @@ public class Map : MonoBehaviour
     {
         lastNode = selectedNode;
         selectedNode = node;
+    }
+
+    public void OpenGameMenu(Node node)
+    {
+        GameObject menu = Instantiate(gameMenuPrefab, node.transform.position, Quaternion.identity);
+        buttonManager.gameMenu = menu;
+        gameMenuActive = true;
+    }
+
+    public void UpdateOccupation()
+    {
+        UpdateUnits();
+        foreach (Node node in nodes)
+        {
+            foreach (Unit unit in units)
+            {
+                if (Vector2.Distance(unit.transform.position, node.transform.position) < 0.5f)
+                {
+                    node.unit = unit;
+                    unit.location = node;
+                }
+                else if (node.unit == unit)
+                {
+                    node.unit = null;
+                }
+            }
+        }
+    }
+
+    public void DestroyGameMenu()
+    {
+        gameMenuActive = false;
+        buttonManager.DestroyGameMenu();
+    }
+
+    public void UpdateUnits()
+    {
+        units = FindObjectsOfType<Unit>();         
     }
 }

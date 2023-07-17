@@ -46,6 +46,7 @@ public class Node : MonoBehaviour
         isOccupied = unit != null;
     }
 
+    //Used to check right clicks which are typically used to undo actions and go back in menus.
     private void OnMouseOver()
     {
         if (Input.GetMouseButton(1))
@@ -56,10 +57,16 @@ public class Node : MonoBehaviour
                 map.GetSelectedNode().resetDefenders();
                 map.attacking = false;
                 map.attackMenuActive = true;
+                return;
             }
             if (map.attackMenuActive)
             {
                 map.ReversePath();
+                return;
+            }
+            if (map.gameMenuActive)
+            {
+                map.DestroyGameMenu();
             }
         }
     }
@@ -84,7 +91,7 @@ public class Node : MonoBehaviour
     //Splits into various contextual actions
     private void OnMouseDown()
     {
-        if (map.currentTurn % 2 == 0)
+        if (map.currentTurn % map.factions != 1 || map.gameMenuActive || map.attackMenuActive)
         {
             return;
         }
@@ -120,7 +127,7 @@ public class Node : MonoBehaviour
         if (!isOccupied || unit.hasMoved)
         {
             Debug.Log("No Unit");
-            map.menuBasic = true; 
+            map.OpenGameMenu(this);
             return;
         }
         if (unit.allegiance != 0 || unit.hasMoved)
@@ -133,12 +140,14 @@ public class Node : MonoBehaviour
         }
     }
 
+    //Selects a unit to move and highlights the squares they can access.
     public void SelectUnitToMove()
     {
         map.SetSelectedUnit(unit);
         Debug.Log("Unit selected");
         FindMoves(this, unit.moves, unit.Movement);
-        Debug.Log(unit.moves.Count.ToString());
+        Debug.Log(unit.location.transform.position.x);
+        Debug.Log(unit.name);
         foreach (Node move in unit.moves)
         {
             move.upOpacity();
@@ -281,7 +290,7 @@ public class Node : MonoBehaviour
         }
         if (movement <= 0 || node == null)
         {
-            if (node.unit != null)
+            if (node.unit)
             {
                 moves.Remove(node);
             }
