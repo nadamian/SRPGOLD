@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -20,6 +21,11 @@ public class Unit : MonoBehaviour
     private bool isAlive = true;
     public bool undo = false; //True if unit is undoing a previous move
 
+    //Constants for the logistic function that models experience gain 
+    private float k = -(Mathf.Log((0.005f) - Mathf.Log(4.0f)) / 20);
+    private float x_0 = -((20 * Mathf.Log(4.0f)) / (Mathf.Log(.005f) - Mathf.Log(4.0f)));
+    private float maxExp = 100;
+
     [Header("Equipment")]
     /*
     Weapon
@@ -39,16 +45,29 @@ public class Unit : MonoBehaviour
 
     public int attackPower = 5; //Will eventually be calculated from stats and weapon stats
     public int attackRange = 1; //Will be made a property of weapon
-    public int Endurance; //Governs HP, Fatigue, and half of the equip load formula 
-    public int Strength; //Half of equip load formula, hard caps total equip load, governs damage dealt with strength-based weapons. 
-    public int Dexterity; //Governs crit chance, half of dodge equation, and speed of learning weapon skills. Damage dealt with dex-based weapons
-    public int Speed; //governs half of dodge equation and ability to multi-attack
+    public int endurance; //Governs HP, Fatigue, and half of the equip load formula 
+    public int strength; //Half of equip load formula, hard caps total equip load, governs damage dealt with strength-based weapons. 
+    public int dexterity; //Governs crit chance, half of dodge equation, and speed of learning weapon skills. Damage dealt with dex-based weapons
+    public int speed; //governs half of dodge equation and ability to multi-attack
     public int intelligence; //governs magic damage, magic accuracy, and ability to learn non-weapon skills
     public int willpower; //governs resistance to magic damage and is a minimum requirement to increase weapon level
     //Weapon skill to be implemented
+    public int[] stats;
 
+    [Header("Growth Rates")]
+    public int enduranceGrowth = 50;
+    public int strengthGrowth = 50;
+    public int dexterityGrowth = 50;
+    public int speedGrowth = 50;
+    public int intelligenceGrowth = 50;
+    public int willpowerGrowth = 50;
+    public int[] growths;
 
-
+    private void Start()
+    {
+        stats = new int[] { endurance, strength, dexterity, speed, intelligence, willpower };
+        growths = new int[] { enduranceGrowth, strengthGrowth, dexterityGrowth, speedGrowth, intelligenceGrowth, willpowerGrowth };
+    }
     // Update is called once per frame
     void Update()
     {
@@ -134,7 +153,28 @@ public class Unit : MonoBehaviour
 
     public void GainExp(int enemyLevel, bool combatResult)
     {
-        //Compute how much experience unit gains and determine if they level up. 
+        int levelDifference = level - enemyLevel;
+        int baseExp = Mathf.RoundToInt(maxExp / 1 + Mathf.Exp(-k * (levelDifference - x_0)));
+        int expGain =  combatResult ? baseExp : baseExp / 4;
+        experience += expGain;
+        if (experience > 100)
+        {
+            LevelUp();
+            experience -= 100;
+        }
+    }
+
+    private void LevelUp()
+    {
+        level++;
+        for(int i = 0; i < stats.Length; i++)
+        {
+            float randomNumber = UnityEngine.Random.Range(0, 100);
+            if (randomNumber <= growths[i])
+            {
+                stats[i]++; 
+            }
+        }   
     }
 
     public bool TakeDamage(int damage)
