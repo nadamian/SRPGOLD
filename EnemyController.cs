@@ -2,7 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class EnemyController : MonoBehaviour
+public class EnemyController : ScriptableObject
 {
     public Map map;
     public void EnemyTurn(int turn)

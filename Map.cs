@@ -4,7 +4,7 @@ using UnityEngine;
 using UnityEngine.Tilemaps;
 
 public class Map : MonoBehaviour
-    //TODO: Undo move when rightclick menu. Implement game menu. Convert globals to map 
+//TODO: Undo move when rightclick menu. Implement game menu. Convert globals to map 
 {
     [SerializeField] Node nodePrefab;
     [SerializeField] GameObject gameMenuPrefab;
@@ -13,6 +13,7 @@ public class Map : MonoBehaviour
     public List<Node> lastPath;
 
     public ButtonManager buttonManager;
+    public EnemyController enemyController;
 
     public Color alliedMoveColor;
 
@@ -38,8 +39,10 @@ public class Map : MonoBehaviour
 
     void Awake()
     {
+        enemyController = new EnemyController();
         buttonManager.map = this;
-        Debug.Log(buttonManager.map != null); 
+        enemyController.map = this;
+        Debug.Log(buttonManager.map != null);
         if (tileMap == null) { tileMap = GetComponent<Tilemap>(); }
         List<Vector3> positions = new List<Vector3>();
         for (int x = tileMap.cellBounds.xMin; x < tileMap.cellBounds.xMax; x++)
@@ -58,7 +61,7 @@ public class Map : MonoBehaviour
         nodes = FindObjectsOfType<Node>();
         foreach (Node node in nodes)
         {
-            node.map = this; 
+            node.map = this;
             foreach (Node secondNode in nodes)
             {
                 node.CheckAdjacent(secondNode);
@@ -82,6 +85,12 @@ public class Map : MonoBehaviour
         attacking = false;
         menuAction = false;
         gameMenuActive = false;
+    }
+
+    public void EndPlayerTurn()
+    {
+        EndTurn();
+        enemyController.EnemyTurn(currentTurn);
     }
 
     public void EndTurn()

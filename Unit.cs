@@ -22,9 +22,9 @@ public class Unit : MonoBehaviour
     public bool undo = false; //True if unit is undoing a previous move
 
     //Constants for the logistic function that models experience gain 
-    private float k = -(Mathf.Log((0.005f) - Mathf.Log(4.0f)) / 20);
+    private float k = -((Mathf.Log(0.005f) - Mathf.Log(4.0f)) / 20);
     private float x_0 = -((20 * Mathf.Log(4.0f)) / (Mathf.Log(.005f) - Mathf.Log(4.0f)));
-    private float maxExp = 100;
+    private float maxExp = 100.0f;
 
     [Header("Equipment")]
     /*
@@ -74,10 +74,7 @@ public class Unit : MonoBehaviour
         //Moves the unit if a path has been set for them
         if (path != null && path.Count > 1)
         {
-            foreach (Node move in moves)
-            {
-                move.resetColor();
-            }
+            ResetMovesHighlight();
             Vector2 dir = path[1].transform.position - transform.position;
             transform.Translate(dir.normalized * moveSpeed * Time.deltaTime, Space.World);
             path[path.Count - 1].unit = this;
@@ -153,15 +150,16 @@ public class Unit : MonoBehaviour
 
     public void GainExp(int enemyLevel, bool combatResult)
     {
-        int levelDifference = level - enemyLevel;
+        int levelDifference = enemyLevel - level;
         int baseExp = Mathf.RoundToInt(maxExp / 1 + Mathf.Exp(-k * (levelDifference - x_0)));
         int expGain =  combatResult ? baseExp : baseExp / 4;
         experience += expGain;
-        if (experience > 100)
+        if (experience >= 100)
         {
             LevelUp();
             experience -= 100;
         }
+        Debug.Log("attacker gained " + expGain.ToString() + " experience and now has a total of " + experience.ToString());
     }
 
     private void LevelUp()
@@ -172,7 +170,8 @@ public class Unit : MonoBehaviour
             float randomNumber = UnityEngine.Random.Range(0, 100);
             if (randomNumber <= growths[i])
             {
-                stats[i]++; 
+                stats[i]++;
+                Debug.Log(this.name.ToString() + " leveled " + stats[i].ToString());
             }
         }   
     }
@@ -202,9 +201,17 @@ public class Unit : MonoBehaviour
     {
         return isAlive;
     }
+    public void ResetMovesHighlight()
+    {
+        foreach (Node move in moves)
+        {
+            move.resetColor();
+        }
+    }
 
     private bool FastApproximately(float a, float b, float threshold)
     {
         return ((a - b) < 0 ? ((a - b) * -1) : (a - b)) <= threshold;
     }
+
 }

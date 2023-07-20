@@ -67,6 +67,12 @@ public class Node : MonoBehaviour
             if (map.gameMenuActive)
             {
                 map.DestroyGameMenu();
+                return;
+            }
+            if (map.GetSelectedUnit() != null)
+            {
+                map.GetSelectedUnit().ResetMovesHighlight();
+                map.SetSelectedUnit(null);
             }
         }
     }

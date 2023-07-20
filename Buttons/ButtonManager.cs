@@ -29,7 +29,7 @@ public class ButtonManager : MonoBehaviour
         Debug.Log("End Turn Pressed");
         map.gameMenuActive = false;
         DestroyGameMenu();
-        map.EndTurn();
+        map.EndPlayerTurn();
     }
 
     public void DestroyGameMenu()
