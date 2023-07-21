@@ -2,6 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
+[CreateAssetMenu]
 public class Weapon : Inventory
 {
     public int range;
@@ -9,7 +10,24 @@ public class Weapon : Inventory
     public int skill;
     public int level;
     public int kills;
-    public bool broken;
+    public int type; //0 = sword, 1 = axe, 2 = lance/spear, 3 = bow/sling, 4 = knife, 5 = club/mace
+
+    public Weapon(int range, int power, int skill, int level, int kills, int type, string itemName, bool broken, int maxUses, int currentUses, int weight, bool canRepair, bool usable)
+    {
+        this.range = range;
+        this.power = power;
+        this.skill = skill;
+        this.level = level;
+        this.kills = kills;
+        this.type = type;
+        this.itemName = itemName;
+        this.broken = broken;
+        this.maxUses = maxUses;
+        this.currentUses = currentUses;
+        this.weight = weight;
+        this.canRepair = canRepair;
+        this.usable = usable;
+    }
 
     public override void Break()
     {

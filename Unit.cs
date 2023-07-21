@@ -27,14 +27,12 @@ public class Unit : MonoBehaviour
     private float maxExp = 100.0f;
 
     [Header("Equipment")]
-    /*
-    Weapon
-    Armor - Head
-    Armor - Chest 
-    Armor - Arms
-    Armor - Legs
-    List<Inventory> Inventory
-    */
+    public Weapon weapon;
+    public Armor head;
+    public Armor chest;
+    public Armor arms;
+    public Armor legs;
+    public List<Inventory> inventory;
 
     [Header("Stats")]
     public int level;
@@ -67,6 +65,22 @@ public class Unit : MonoBehaviour
     {
         stats = new int[] { endurance, strength, dexterity, speed, intelligence, willpower };
         growths = new int[] { enduranceGrowth, strengthGrowth, dexterityGrowth, speedGrowth, intelligenceGrowth, willpowerGrowth };
+        if (head == null)
+        {
+            head = new Armor("No Helmet", 0, 0, 0, 0, 0);
+        }
+        if (chest == null)
+        {
+            chest = new Armor("No Chest", 0, 1, 0, 0, 0);
+        }
+        if (arms == null)
+        {
+            arms = new Armor("No Arms", 0, 2, 0, 0, 0);
+        }
+        if (legs == null)
+        {
+            legs = new Armor("No Legs", 0, 3, 0, 0, 0);
+        }
     }
     // Update is called once per frame
     void Update()
