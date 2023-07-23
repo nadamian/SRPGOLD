@@ -27,6 +27,7 @@ public class Map : MonoBehaviour
     public int currentTurn = 1;
     public Unit[] allUnits; //updated each turn to account for reinforcements
     public int factions = 2; //Determines number of distinct factions that will be taking turns 
+    public int extraAttackThreshold = 5; //The difference in speed required to deliver an extra attack.
 
     private Unit selectedUnit;
     private Node selectedNode;

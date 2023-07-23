@@ -196,11 +196,12 @@ public class Node : MonoBehaviour
         //chooses an enemy target from occupied squares within unit attack range.
         Unit attacker = map.GetSelectedUnit();
         Unit defender = unit;
-        if(!inRange(attacker, this, unit.attackRange)) { Debug.Log("Not in range");  return; }
+        if(!inRange(defender, attacker.location, attacker.attackRange)) { Debug.Log("Not in range");  return; }
+        bool canCounter = inRange(attacker, defender.location, defender.attackRange);
         if(defender == null) { Debug.Log("null defender"); return; }
         Debug.Log("attacking " + this.name);
         map.GetSelectedNode().resetDefenders();
-        attacker.Attack(defender);
+        attacker.Attack(defender, canCounter);
     }
     private void MouseDownEnemySelected()
     {
@@ -241,7 +242,7 @@ public class Node : MonoBehaviour
         west.resetColor();
     }
 
-    private bool inRange(Unit unit, Node node, int range)
+    public bool inRange(Unit unit, Node node, int range)
     {
         if (range < 1) { return false; }
         if (unit == node.north.unit || unit == node.south.unit || unit == node.east.unit || unit == node.west.unit) { return true; }

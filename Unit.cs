@@ -50,6 +50,7 @@ public class Unit : MonoBehaviour
     public int intelligence; //governs magic damage, magic accuracy, and ability to learn non-weapon skills
     public int willpower; //governs resistance to magic damage and is a minimum requirement to increase weapon level
     //Weapon skill to be implemented
+    public int defense;
     public int[] stats;
 
     [Header("Growth Rates")]
@@ -65,22 +66,7 @@ public class Unit : MonoBehaviour
     {
         stats = new int[] { endurance, strength, dexterity, speed, intelligence, willpower };
         growths = new int[] { enduranceGrowth, strengthGrowth, dexterityGrowth, speedGrowth, intelligenceGrowth, willpowerGrowth };
-        if (head == null)
-        {
-            head = new Armor("No Helmet", 0, 0, 0, 0, 0);
-        }
-        if (chest == null)
-        {
-            chest = new Armor("No Chest", 0, 1, 0, 0, 0);
-        }
-        if (arms == null)
-        {
-            arms = new Armor("No Arms", 0, 2, 0, 0, 0);
-        }
-        if (legs == null)
-        {
-            legs = new Armor("No Legs", 0, 3, 0, 0, 0);
-        }
+        SetUnequippedArmor();   
     }
     // Update is called once per frame
     void Update()
@@ -134,23 +120,43 @@ public class Unit : MonoBehaviour
         location.map.attackMenuActive = true;
     }
 
-    public void Attack(Unit defender)
+    public void Attack(Unit defender, bool canCounter)
     {
-        //as the combat system matures there will be greater calculation required in determining these values. 
-        int damageDealt = attackPower;
-        int damageTaken = defender.attackPower;
+        //Combat variables
+        bool attackType = GetAttackType();
+        bool defenderAttackType = defender.GetAttackType();
+        int attackPower = GetAttackPower();
+        int defenderAttackPower = defender.GetAttackPower();
         int defendLevel = defender.level; //saved so that we can computed exp gain after destroying defender in case they die.
-        //Leave room for repetition when multi attacks implemented 
-        bool attackKilled = defender.TakeDamage(damageDealt);
-        if(defender.IsAlive() /*&& in range of counter*/)
+        int speedDif = GetAttackSpeed() - defender.GetAttackSpeed();
+        int attackerTimesToAttack = speedDif > 0 ? Mathf.FloorToInt(speedDif / location.map.extraAttackThreshold) : 1; //we store these like this so that weapon effects granting bonus attacks can be added after
+        int defenderTimesToAttack = speedDif < 0 ? Mathf.FloorToInt(MathF.Abs(speedDif / location.map.extraAttackThreshold)) : 1;
+        int maxAttacks = Math.Max(attackerTimesToAttack, defenderTimesToAttack);
+        int attackerAttacksRemaining = attackerTimesToAttack;
+        int defenderAttacksRemaining = defenderTimesToAttack;
+        bool attackKilled = false; // these are used to determine experience gain b/c units gain more for a kill
+        bool defendKilled = false;
+        for (int i = 0; i < maxAttacks; i++)
         {
-            bool defendKilled = TakeDamage(damageTaken);
-            defender.GainExp(level, defendKilled);
+            if (attackerAttacksRemaining > 0)
+            {
+                attackKilled = defender.TakeDamage(attackPower, attackType);
+                attackerAttacksRemaining--;
+            }
+            if (defender.IsAlive() && canCounter && defenderAttacksRemaining > 0)
+            {
+                defendKilled = TakeDamage(defenderAttackPower, defenderAttackType);
+                defenderAttacksRemaining--;
+            }
         }
         location.map.resetGlobals();
         if (!defender.isAlive)
         {
             defender.Die();
+        }
+        else
+        {
+            defender.GainExp(level, defendKilled);
         }
         if (!isAlive)
         {
@@ -182,18 +188,23 @@ public class Unit : MonoBehaviour
         for(int i = 0; i < stats.Length; i++)
         {
             float randomNumber = UnityEngine.Random.Range(0, 100);
-            if (randomNumber <= growths[i])
+            for (int j = growths[i]; j > 0; j -= 100) //Potential to level stats multiple times if growth exceedes 100
             {
-                stats[i]++;
-                Debug.Log(this.name.ToString() + " leveled " + stats[i].ToString());
+                if (randomNumber <= j)
+                {
+                    stats[i]++;
+                    Debug.Log(this.name.ToString() + " leveled " + stats[i].ToString());
+                }
             }
         }   
     }
 
-    public bool TakeDamage(int damage)
+    //Combat Helpers
+    public bool TakeDamage(int incomingAttackPower, bool attackType)
     {
-        HP -= damage;
-        Debug.Log(name + " took " + damage.ToString() + " damage and has " + HP.ToString() + "HP remaining");
+        int defendStat = attackType ? defense: willpower;
+        int damage = incomingAttackPower - defendStat;
+        Debug.Log(name + " took " + damage.ToString() + " damage and has " + HP.ToString() + " HP remaining");
         if (HP <= 0)
         {
             isAlive = false;
@@ -202,9 +213,55 @@ public class Unit : MonoBehaviour
         return false;
     }
 
+    public int GetAttackPower()
+    {
+        //Potential to add item bonuses
+        if (weapon == null) { return 0; }
+        if (weapon.techniqueType == 0) { return weapon.power + strength; }
+        if (weapon.techniqueType == 1) { return weapon.power + dexterity; }
+        if (weapon.techniqueType == 2) { return weapon.power + intelligence; }
+        else { Debug.LogError("Weapon Technique Value Incorrectly Assigned"); return -1; }
+    }
+
+    //Subtracts equip load in excess of capacity from speed
+    public int GetAttackSpeed()
+    {
+        //Potential to add item bonuses
+        int mitigator = strength + endurance;
+        int equipWeight = GetTotalCarryWeight();
+        int overWeight = equipWeight - mitigator;
+        if (overWeight < 0) { overWeight = 0; }
+        return speed - overWeight;
+    }
+
+    public int GetPhysicalDefense()
+    {
+        //Potential to add item bonuses 
+        defense = head.defense + chest.defense + arms.defense + legs.defense;
+        return defense;
+    }
+
+    public int GetMagicalDefense()
+    {
+        //Potential to add item bonuses
+        return willpower;
+    }
+
+    public int GetTotalCarryWeight()
+    {
+        SetUnequippedArmor();
+        return weapon.weight + head.weight + chest.weight + arms.weight + legs.weight;
+    }
+
+    public bool GetAttackType()
+    {
+        return weapon.techniqueType < 2;
+    }
+
     //Kills unit
     public void Die()
     {
+        location.unit = null;
         Debug.Log(name + " has shuffled off this mortal coil");
         isAlive = false;
         GetComponent<SpriteRenderer>().enabled = false;
@@ -220,6 +277,26 @@ public class Unit : MonoBehaviour
         foreach (Node move in moves)
         {
             move.resetColor();
+        }
+    }
+
+    public void SetUnequippedArmor()
+    {
+        if (head == null)
+        {
+            head = new Armor("No Helmet", 0, 0, 0, 0, 0);
+        }
+        if (chest == null)
+        {
+            chest = new Armor("No Chest", 0, 1, 0, 0, 0);
+        }
+        if (arms == null)
+        {
+            arms = new Armor("No Arms", 0, 2, 0, 0, 0);
+        }
+        if (legs == null)
+        {
+            legs = new Armor("No Legs", 0, 3, 0, 0, 0);
         }
     }
 
