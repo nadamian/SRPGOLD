@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Tilemaps;
 
+/*Status: Experience gain on enemies is too high. Units can initiate combat when they aren't in range to attack (they just eat the counter) 
+*/
 public class Map : MonoBehaviour
 //TODO: Undo move when rightclick menu. Implement game menu. Convert globals to map 
 {
@@ -43,7 +45,6 @@ public class Map : MonoBehaviour
         enemyController = new EnemyController();
         buttonManager.map = this;
         enemyController.map = this;
-        Debug.Log(buttonManager.map != null);
         if (tileMap == null) { tileMap = GetComponent<Tilemap>(); }
         List<Vector3> positions = new List<Vector3>();
         for (int x = tileMap.cellBounds.xMin; x < tileMap.cellBounds.xMax; x++)
@@ -76,7 +77,6 @@ public class Map : MonoBehaviour
             }
         }
         ButtonManager[] managers = FindObjectsOfType<ButtonManager>();
-        Debug.Log(managers.Length);
     }
     public void resetGlobals()
     {

@@ -38,12 +38,10 @@ public class Unit : MonoBehaviour
     public int level;
     public int experience;
 
-    public int HP = 10;
+    public int CurrentHP;
     public int Movement = 6;
 
-    public int attackPower = 5; //Will eventually be calculated from stats and weapon stats
-    public int attackRange = 1; //Will be made a property of weapon
-    public int endurance; //Governs HP, Fatigue, and half of the equip load formula 
+    public int endurance; //Governs Max HP, Fatigue, and half of the equip load formula 
     public int strength; //Half of equip load formula, hard caps total equip load, governs damage dealt with strength-based weapons. 
     public int dexterity; //Governs crit chance, half of dodge equation, and speed of learning weapon skills. Damage dealt with dex-based weapons
     public int speed; //governs half of dodge equation and ability to multi-attack
@@ -66,7 +64,8 @@ public class Unit : MonoBehaviour
     {
         stats = new int[] { endurance, strength, dexterity, speed, intelligence, willpower };
         growths = new int[] { enduranceGrowth, strengthGrowth, dexterityGrowth, speedGrowth, intelligenceGrowth, willpowerGrowth };
-        SetUnequippedArmor();   
+        SetUnequippedArmor();
+        CurrentHP = endurance * 2;
     }
     // Update is called once per frame
     void Update()
@@ -129,15 +128,19 @@ public class Unit : MonoBehaviour
         int defenderAttackPower = defender.GetAttackPower();
         int defendLevel = defender.level; //saved so that we can computed exp gain after destroying defender in case they die.
         int speedDif = GetAttackSpeed() - defender.GetAttackSpeed();
-        int attackerTimesToAttack = speedDif > 0 ? Mathf.FloorToInt(speedDif / location.map.extraAttackThreshold) : 1; //we store these like this so that weapon effects granting bonus attacks can be added after
-        int defenderTimesToAttack = speedDif < 0 ? Mathf.FloorToInt(MathF.Abs(speedDif / location.map.extraAttackThreshold)) : 1;
+        Debug.Log("Speed Difference: " + speedDif.ToString());
+        int attackerTimesToAttack = speedDif >= 0 ? Mathf.FloorToInt(speedDif / location.map.extraAttackThreshold) + 1 : 1; //we store these like this so that weapon effects granting bonus attacks can be added after
+        int defenderTimesToAttack = speedDif <= 0 ? Mathf.FloorToInt(MathF.Abs(speedDif / location.map.extraAttackThreshold)) + 1 : 1;
         int maxAttacks = Math.Max(attackerTimesToAttack, defenderTimesToAttack);
         int attackerAttacksRemaining = attackerTimesToAttack;
         int defenderAttacksRemaining = defenderTimesToAttack;
+        Debug.Log("Attacker attacks: " + attackerAttacksRemaining.ToString());
+        Debug.Log("Defender attacks: " + defenderAttacksRemaining.ToString());
         bool attackKilled = false; // these are used to determine experience gain b/c units gain more for a kill
         bool defendKilled = false;
-        for (int i = 0; i < maxAttacks; i++)
+        for (int i = 0; i <= maxAttacks; i++)
         {
+            Debug.Log("attack #" + i.ToString());
             if (attackerAttacksRemaining > 0)
             {
                 attackKilled = defender.TakeDamage(attackPower, attackType);
@@ -204,8 +207,9 @@ public class Unit : MonoBehaviour
     {
         int defendStat = attackType ? defense: willpower;
         int damage = incomingAttackPower - defendStat;
-        Debug.Log(name + " took " + damage.ToString() + " damage and has " + HP.ToString() + " HP remaining");
-        if (HP <= 0)
+        CurrentHP -= damage;
+        Debug.Log(name + " took " + damage.ToString() + " damage and has " + CurrentHP.ToString() + " HP remaining");
+        if (CurrentHP <= 0)
         {
             isAlive = false;
             return true;
@@ -213,6 +217,11 @@ public class Unit : MonoBehaviour
         return false;
     }
 
+    //Getters and Setters
+    public bool IsAlive()
+    {
+        return isAlive;
+    }
     public int GetAttackPower()
     {
         //Potential to add item bonuses
@@ -232,6 +241,30 @@ public class Unit : MonoBehaviour
         int overWeight = equipWeight - mitigator;
         if (overWeight < 0) { overWeight = 0; }
         return speed - overWeight;
+    }
+
+    public int GetMinRange()
+    {
+        if (weapon != null)
+        {
+            return weapon.minRange;
+        }
+        else
+        {
+            return 0;
+        }
+    }
+
+    public int GetMaxRange()
+    {
+        if (weapon != null)
+        {
+            return weapon.maxRange;
+        }
+        else
+        {
+            return 0;
+        }
     }
 
     public int GetPhysicalDefense()
@@ -268,10 +301,6 @@ public class Unit : MonoBehaviour
         Destroy(this);
     }
 
-    public bool IsAlive()
-    {
-        return isAlive;
-    }
     public void ResetMovesHighlight()
     {
         foreach (Node move in moves)
@@ -299,6 +328,7 @@ public class Unit : MonoBehaviour
             legs = new Armor("No Legs", 0, 3, 0, 0, 0);
         }
     }
+
 
     private bool FastApproximately(float a, float b, float threshold)
     {

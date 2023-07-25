@@ -79,7 +79,6 @@ public class Node : MonoBehaviour
 
     private void OnMouseEnter()
     {
-        Debug.Log("Mouse enter");
         if(map.GetSelectedUnit() == null)
         {
             upOpacity();
@@ -129,7 +128,6 @@ public class Node : MonoBehaviour
     //OnMouseDownHelpers
     private void MouseDownNoUnitSelected()
     {
-        Debug.Log("Mouse Down, Selecting unit");
         if (!isOccupied || unit.hasMoved)
         {
             Debug.Log("No Unit");
@@ -150,10 +148,7 @@ public class Node : MonoBehaviour
     public void SelectUnitToMove()
     {
         map.SetSelectedUnit(unit);
-        Debug.Log("Unit selected");
         FindMoves(this, unit.moves, unit.Movement);
-        Debug.Log(unit.location.transform.position.x);
-        Debug.Log(unit.name);
         foreach (Node move in unit.moves)
         {
             move.upOpacity();
@@ -196,8 +191,8 @@ public class Node : MonoBehaviour
         //chooses an enemy target from occupied squares within unit attack range.
         Unit attacker = map.GetSelectedUnit();
         Unit defender = unit;
-        if(!inRange(defender, attacker.location, attacker.attackRange)) { Debug.Log("Not in range");  return; }
-        bool canCounter = inRange(attacker, defender.location, defender.attackRange);
+        if(!inRange(defender, attacker.location, attacker.GetMinRange(), attacker.GetMaxRange())) { Debug.Log("Not in range");  return; } //Determines if the chosen target is in range to be attacked
+        bool canCounter = inRange(attacker, defender.location, defender.GetMinRange(), defender.GetMaxRange()); //Determines if the target will be able to counter
         if(defender == null) { Debug.Log("null defender"); return; }
         Debug.Log("attacking " + this.name);
         map.GetSelectedNode().resetDefenders();
@@ -242,14 +237,14 @@ public class Node : MonoBehaviour
         west.resetColor();
     }
 
-    public bool inRange(Unit unit, Node node, int range)
+    public bool inRange(Unit unit, Node node, int minRange, int maxRange)
     {
-        if (range < 1) { return false; }
+        if (maxRange < 1 || maxRange < minRange) { return false; }
         if (unit == node.north.unit || unit == node.south.unit || unit == node.east.unit || unit == node.west.unit) { return true; }
         else
         {
-            int newRange = range - 1;
-            return inRange(unit, node.north, newRange) || inRange(unit, node.south, newRange) || inRange(unit, node.east, newRange) || inRange(unit, node.west, newRange);
+            int newRange = maxRange - 1;
+            return inRange(unit, node.north, minRange, newRange) || inRange(unit, node.south, minRange, newRange) || inRange(unit, node.east, minRange, newRange) || inRange(unit, node.west, minRange, newRange);
         }
     }
 
